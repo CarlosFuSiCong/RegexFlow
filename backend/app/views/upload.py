@@ -1,3 +1,5 @@
+# app/views/upload.py
+
 import logging
 import json
 import numpy as np
@@ -16,7 +18,16 @@ def upload_file(request):
 
         df, preview, columns = handle_upload(file)
 
-        # replace nan to None
+        # Save uploaded file format: csv or xlsx
+        if file.name.endswith(".xlsx"):
+            request.session["uploaded_format"] = "xlsx"
+        else:
+            request.session["uploaded_format"] = "csv"
+
+        # Save original file
+        request.session["uploaded_filename"] = file.name
+
+        # Replace NaN with None for serialization
         safe_data = df.replace({np.nan: None}).to_dict(orient="records")
         request.session["uploaded_data"] = json.dumps(safe_data, default=str)
 
