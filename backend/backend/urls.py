@@ -20,6 +20,7 @@ from django.urls import path
 from app.views.upload import upload_file
 from app.views.generate import generate_regex
 from app.views.replace import replace_all
+from app.views.download import download_file
 
 
 urlpatterns = [
@@ -27,4 +28,5 @@ urlpatterns = [
     path("upload/", upload_file),
     path("generate-regex/", generate_regex),
     path("replace/", replace_all),
+    path("download/", download_file),
 ]
