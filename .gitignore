@@ -1,0 +1,22 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Django migrations (excluding __init__.py)
+*/migrations/
+!*/migrations/__init__.py
+
+# SQLite DB or other dev artifacts
+*.sqlite3
+*.log
+
+# Ignore virtual environment in backend/
+backend/venv/
+
+# Editor settings (e.g., VS Code)
+.vscode/
+
+# React frontend
+frontend/node_modules/
+frontend/build/
