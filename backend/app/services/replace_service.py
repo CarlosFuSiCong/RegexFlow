@@ -1,31 +1,128 @@
 # app/services/replace_service.py
 
-import json
 import pandas as pd
 import logging
-from app.utils.regex_replace import replace_all_matches_in_table
+from typing import List, Dict
+from app.utils.replace_all_matches import replace_all_matches
+from app.utils.replace_column_matches import replace_column_matches
+from app.utils.replace_row_matches import replace_row_matches
+from app.utils.replace_cell_match import replace_cell_match
 
 logger = logging.getLogger(__name__)
 
 
-def handle_full_table_replacement(session, pattern: str, replacement: str):
+def apply_tasks(df: pd.DataFrame, tasks: List[Dict[str, str]]) -> List[Dict]:
+    """
+    Apply a list of regex tasks to the given DataFrame.
+
+    Each task should contain:
+        - target: e.g., "column Email", "row 2", "cell B2", or "all"
+        - regex: the pattern to match
+        - replacement: the replacement string
+
+    Returns a list of all successful replacements.
+    Tasks with invalid format or failed replacements will be skipped with a warning.
+    """
+    all_replacements = []
+
+    for task in tasks:
+        try:
+            target = task["target"]
+            pattern = task["regex"]
+            replacement = task["replacement"]
+
+            if target.startswith("column "):
+                col = target.replace("column ", "")
+                all_replacements += replace_in_column(df, col, pattern, replacement)
+
+            elif target.startswith("row "):
+                row_idx = int(target.replace("row ", ""))
+                all_replacements += replace_in_row(df, row_idx, pattern, replacement)
+
+            elif target.startswith("cell "):
+                cell = target.replace("cell ", "").upper()
+                col_letter = "".join(filter(str.isalpha, cell))
+                row_number = int("".join(filter(str.isdigit, cell))) - 1
+                all_replacements += replace_in_cell(
+                    df, row_number, col_letter, pattern, replacement
+                )
+
+            elif target == "all":
+                all_replacements += replace_in_all(df, pattern, replacement)
+
+            else:
+                raise ValueError(f"Unsupported target type: '{target}'")
+
+        except Exception as e:
+            logger.warning(f"Skipping task due to error: {task} → {e}")
+
+    logger.info(f"Total replacements applied: {len(all_replacements)}")
+    return all_replacements
+
+
+def replace_in_all(df: pd.DataFrame, pattern: str, replacement: str) -> List[Dict]:
+    """
+    Replace regex matches across the entire DataFrame.
+    """
     try:
-        if "uploaded_data" not in session:
-            raise ValueError(
-                "No uploaded data found in session. Please upload a file first."
-            )
-
-        json_data = session["uploaded_data"]
-        df = pd.read_json(json_data)
-
-        result = replace_all_matches_in_table(df, pattern, replacement, inplace=False)
-        preview = result["replacements"][:10]
-
-        session["uploaded_data"] = result["updated_df"].to_json()
-
-        logger.info(f"Regex applied to entire table with pattern '{pattern}'")
-        return {"replacements": preview}
-
+        logger.info(f"Applying regex to entire table: pattern='{pattern}'")
+        result = replace_all_matches(df, pattern, replacement, inplace=True)
+        return result["replacements"]
     except Exception as e:
-        logger.exception("Regex full-table replacement failed")
-        raise ValueError(f"Full-table replacement failed: {e}")
+        logger.exception("Failed to apply replacement to entire table.")
+        raise ValueError(f"Regex replacement failed (all): {e}")
+
+
+def replace_in_column(
+    df: pd.DataFrame, col_name: str, pattern: str, replacement: str
+) -> List[Dict]:
+    """
+    Replace regex matches in a specific column.
+    """
+    try:
+        logger.info(f"Applying regex to column '{col_name}': pattern='{pattern}'")
+        result = replace_column_matches(
+            df, col_name, pattern, replacement, inplace=True
+        )
+        return result["replacements"]
+    except Exception as e:
+        logger.exception(f"Failed to apply replacement to column '{col_name}'.")
+        raise ValueError(f"Regex replacement failed (column={col_name}): {e}")
+
+
+def replace_in_row(
+    df: pd.DataFrame, row_index: int, pattern: str, replacement: str
+) -> List[Dict]:
+    """
+    Replace regex matches in a specific row.
+    """
+    try:
+        logger.info(f"Applying regex to row {row_index}: pattern='{pattern}'")
+        result = replace_row_matches(df, row_index, pattern, replacement, inplace=True)
+        return result["replacements"]
+    except Exception as e:
+        logger.exception(f"Failed to apply replacement to row {row_index}.")
+        raise ValueError(f"Regex replacement failed (row={row_index}): {e}")
+
+
+def replace_in_cell(
+    df: pd.DataFrame, row_index: int, col_name: str, pattern: str, replacement: str
+) -> List[Dict]:
+    """
+    Replace regex match in a specific cell.
+    """
+    try:
+        logger.info(
+            f"Applying regex to cell ({row_index}, '{col_name}'): pattern='{pattern}'"
+        )
+        result = replace_cell_match(
+            df, f"{col_name}{row_index + 1}", pattern, replacement, inplace=True
+        )
+        return result["replacements"]
+    except Exception as e:
+        logger.exception(
+            f"Failed to apply replacement to cell ({row_index}, '{col_name}')."
+        )
+        raise ValueError(
+            f"Regex replacement failed (cell={col_name}{row_index + 1}): {e}"
+        )

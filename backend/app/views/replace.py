@@ -1,50 +1,57 @@
 # app/views/replace.py
 
-import logging
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from app.services.replace_service import handle_full_table_replacement
+from app.services.replace_service import apply_tasks
+import logging
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 
 @api_view(["POST"])
-def replace_all(request):
+def replace_tasks(request):
     """
     POST Body:
     {
-        "regex": "<pattern>",
-        "replacement": "<replacement_text>" (optional)
+        "tasks": [
+            {"target": "column Email", "regex": "...", "replacement": "..."},
+            {"target": "cell B2", "regex": "...", "replacement": "..."},
+            ...
+        ]
     }
     """
     try:
         data = request.data
-        regex = data.get("regex")
-        replacement = data.get("replacement", "")
+        tasks = data.get("tasks")
 
-        if not regex:
-            return Response({"error": "Missing required field: regex."}, status=400)
+        if not tasks or not isinstance(tasks, list):
+            return Response({"error": "Missing or invalid 'tasks' array."}, status=400)
 
-        logger.info(
-            f"Initiating full table replacement: pattern={regex}, replacement={replacement}"
-        )
+        df = request.session.get("working_df")
+        if df is None:
+            raise ValueError("No DataFrame found in session.")
 
-        result = handle_full_table_replacement(
-            session=request.session, pattern=regex, replacement=replacement
-        )
+        df = pd.read_json(df)
+
+        logger.info(f"Starting regex task application: {len(tasks)} tasks")
+
+        replacements = apply_tasks(df, tasks)
+
+        request.session["working_df"] = df.to_json()
 
         return Response(
             {
-                "message": "Replacement completed successfully.",
-                "replaced_count": len(result["replacements"]),
-                "preview": result["replacements"][:10],
+                "message": "Tasks applied successfully.",
+                "total_replacements": len(replacements),
+                "preview": replacements[:10],
             }
         )
 
     except ValueError as e:
-        logger.warning(f"Validation error during replacement: {e}")
+        logger.warning(f"Validation error during multi-task replacement: {e}")
         return Response({"error": str(e)}, status=400)
 
     except Exception as e:
-        logger.exception("Unexpected error during regex replacement.")
+        logger.exception("Unexpected error during multi-task replacement.")
         return Response({"error": "Unexpected error occurred."}, status=500)

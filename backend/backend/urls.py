@@ -18,15 +18,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from app.views.upload import upload_file
-from app.views.generate import generate_regex
-from app.views.replace import replace_all
+from app.views.generate import generate_regex_tasks
+from app.views.replace import replace_tasks
 from app.views.download import download_file
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("upload/", upload_file),
-    path("generate-regex/", generate_regex),
-    path("replace/", replace_all),
-    path("download/", download_file),
+    path("api/upload/", upload_file),
+    path("api/generate-tasks/", generate_regex_tasks),
+    path("api/replace/", replace_tasks),
+    path("api/download/", download_file),
 ]
