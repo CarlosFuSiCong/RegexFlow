@@ -56,11 +56,14 @@ def get_regex_tasks_from_nl(description: str) -> List[Dict[str, str]]:
     # Construct a prompt to request a JSON array of edits
     prompt = f"""
 You are an intelligent assistant that parses complex Excel editing instructions.
-
 Given the following user description, extract a list of edits. Each edit must include:
-- "target": the Excel region to apply the operation (e.g. "cell B2", "column Email", "row 1", or "all")
-- "regex": the pattern to match (no quotes or explanation)
-- "replacement": the string to replace the match with (may be empty if not provided)
+
+"target": the Excel region to apply the operation (e.g. "cell B2", "column Email", "row 0", or "all").
+If a field (like "address") is mentioned along with specific rows (e.g., "first 3 rows of address"), infer it refers to specific cells and output targets like "cell Address row 0", "cell Address row 1", etc.
+
+"regex": the pattern to match (no quotes or explanation)
+
+"replacement": the string to replace the match with (can be empty)
 
 Output as a JSON array of objects. Do not include any explanation or formatting.
 
