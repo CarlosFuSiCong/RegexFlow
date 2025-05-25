@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from app.services.replace_service import apply_tasks
 import logging
 import pandas as pd
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +29,23 @@ def replace_tasks(request):
         if not tasks or not isinstance(tasks, list):
             return Response({"error": "Missing or invalid 'tasks' array."}, status=400)
 
-        df = request.session.get("working_df")
-        if df is None:
+        df_json = request.session.get("working_df")
+        if df_json is None:
             raise ValueError("No DataFrame found in session.")
 
-        df = pd.read_json(df)
+        # Load the original DataFrame from session
+        df = pd.read_json(df_json)
+
+        # Make a deep copy to avoid modifying the original DataFrame directly
+        original_df = copy.deepcopy(df)
 
         logger.info(f"Starting regex task application: {len(tasks)} tasks")
 
-        replacements = apply_tasks(df, tasks)
+        # Apply regex replacements to the copied DataFrame
+        replacements = apply_tasks(original_df, tasks)
 
-        request.session["working_df"] = df.to_json()
+        # Save the modified DataFrame back to the session
+        request.session["working_df"] = original_df.to_json()
 
         return Response(
             {
