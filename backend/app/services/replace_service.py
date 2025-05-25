@@ -31,6 +31,11 @@ def apply_tasks(df: pd.DataFrame, tasks: List[Dict[str, str]]) -> List[Dict]:
             pattern = task["regex"]
             replacement = task["replacement"]
 
+            # Normalize ".*" to "^.*$" to avoid duplicate replacements
+            if pattern.strip() == ".*":
+                logger.debug(f"Normalizing regex '.*' to '^.*$' for task: {task}")
+                pattern = "^.*$"
+
             if target.startswith("column "):
                 col = target.replace("column ", "")
                 all_replacements += replace_in_column(df, col, pattern, replacement)

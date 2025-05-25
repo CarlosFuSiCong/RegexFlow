@@ -15,7 +15,7 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
-MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
 def get_regex_tasks_from_nl(description: str) -> List[Dict[str, str]]:
@@ -55,19 +55,19 @@ def get_regex_tasks_from_nl(description: str) -> List[Dict[str, str]]:
     """
     # Construct a prompt to request a JSON array of edits
     prompt = f"""
-You are an intelligent assistant that parses complex Excel editing instructions.
-Given the following user description, extract a list of edits. Each edit must include:
+You are a smart assistant.  
+Your task is to extract regex-based edits from Excel editing instructions.
 
-"target": the Excel region to apply the operation (e.g. "cell B2", "column Email", "row 0", or "all").
-If a field (like "address") is mentioned along with specific rows (e.g., "first 3 rows of address"), infer it refers to specific cells and output targets like "cell Address row 0", "cell Address row 1", etc.
+For each edit, return a JSON object with:
+- target: where to apply the change (e.g., "cell B2", "column Email", "row 0", "all")
+- regex: the pattern to match (no quotes)
+- replacement: the replacement string (can be empty)
 
-"regex": the pattern to match (no quotes or explanation)
+If a field like "Email" is mentioned with specific rows (e.g. "first 3 rows of Email"), convert to:
+"cell Email row 0", "cell Email row 1", etc.
 
-"replacement": the string to replace the match with (can be empty)
-
-Output as a JSON array of objects. Do not include any explanation or formatting.
-
-Description: {description}
+Return only a raw JSON array. Do not use markdown syntax like ```json.
+Description: {description}  
 JSON:
 """
 
