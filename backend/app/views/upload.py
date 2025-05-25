@@ -31,6 +31,9 @@ def upload_file(request):
         safe_data = df.replace({np.nan: None}).to_dict(orient="records")
         request.session["uploaded_data"] = json.dumps(safe_data, default=str)
 
+        # Add this line to make /replace/ work
+        request.session["working_df"] = df.to_json()
+
         preview = df.head(10).replace({np.nan: None}).to_dict("records")
 
         logger.info(f"Upload successful: {file.name}, columns: {columns}")

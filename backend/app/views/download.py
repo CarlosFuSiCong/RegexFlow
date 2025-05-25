@@ -1,9 +1,9 @@
 # app/views/download.py
 
-import logging
 from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from app.services.download_service import get_file_from_session
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -11,18 +11,18 @@ logger = logging.getLogger(__name__)
 @api_view(["GET"])
 def download_file(request):
     try:
-        file_data, content_type, filename = get_file_from_session(request.session)
+        # Get custom file name
+        custom_filename = request.GET.get("filename")
 
-        response = HttpResponse(file_data, content_type=content_type)
+        file_bytes, mime_type, default_filename = get_file_from_session(request.session)
+
+        # Use a custom name (with extension), otherwise use the default name
+        filename = custom_filename or default_filename
+
+        response = HttpResponse(file_bytes, content_type=mime_type)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-        logger.info(f"{filename} file ready for download")
         return response
 
-    except ValueError as e:
-        logger.warning(f"Download failed: {e}")
-        return HttpResponse(str(e), status=400)
-
     except Exception as e:
-        logger.exception("Unexpected error during file download")
-        return HttpResponse("Unexpected error occurred.", status=500)
+        logger.exception("Download failed.")
+        return HttpResponse("Internal server error.", status=500)

@@ -8,14 +8,21 @@ logger = logging.getLogger(__name__)
 
 
 def get_file_from_session(session) -> tuple[bytes, str, str]:
-    if "uploaded_data" not in session:
+    """
+    Returns: (file_bytes, mime_type, filename)
+    """
+    if "working_df" not in session and "uploaded_data" not in session:
         raise ValueError(
             "No processed data found in session. Please upload and process a file first."
         )
 
     try:
         format = session.get("uploaded_format", "csv").lower()
-        df = pd.read_json(session["uploaded_data"])
+
+        if "working_df" in session:
+            df = pd.read_json(session["working_df"])
+        else:
+            df = pd.read_json(session["uploaded_data"])
 
         if format == "xlsx":
             buffer = BytesIO()
