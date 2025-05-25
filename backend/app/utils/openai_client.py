@@ -20,54 +20,59 @@ MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 def get_regex_tasks_from_nl(description: str) -> List[Dict[str, str]]:
     """
-    Parse a natural language instruction and extract multiple regex-based editing tasks
-    for Excel data.
+    Parse a natural language instruction and extract regex-based editing tasks for Excel data.
 
-    The function supports complex instructions that include multiple changes,
-    and returns each change as a separate task.
+    Each task includes:
+    - "target": A semantic description of the region to edit (e.g., "row 2", "column Email", "first 3 columns of row 1").
+                Use a helper like `resolve_target()` to convert it into exact DataFrame locations.
+    - "regex": A raw regex pattern to match.
+    - "replacement": The string to replace matches with (can be empty).
 
     Args:
-        description (str): A plain English instruction containing one or more edit requests.
-            Example:
-            "Replace phone numbers in column Contact with [hidden] and redact all emails in cell B2."
+        description (str): English instruction with one or more edit requests.
 
     Returns:
-        List[Dict[str, str]]: A list of dictionaries, where each dictionary represents one edit task with:
-            - "target": The region in the Excel sheet to apply the change.
-                        Can be "cell B2", "column Contact", "row 1", or "all".
-            - "regex": The regular expression pattern to search for.
-                       No quotes, no explanation, just the raw pattern.
-            - "replacement": The string to replace the matched pattern with.
-                             May be an empty string if not specified.
-            Example return:
-            [
-                {
-                    "target": "column Contact",
-                    "regex": "\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b",
-                    "replacement": "[hidden]"
-                },
-                {
-                    "target": "cell B2",
-                    "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
-                    "replacement": "[redacted]"
-                }
-            ]
+        List[Dict[str, str]]: A list of edit tasks.
+
+    Example:
+    [
+        {
+            "target": "column Contact",
+            "regex": "\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b",
+            "replacement": "[hidden]"
+        },
+        {
+            "target": "first 2 rows of column Email",
+            "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+            "replacement": "[redacted]"
+        }
+    ]
     """
     # Construct a prompt to request a JSON array of edits
     prompt = f"""
-You are a smart assistant.  
+You are a smart assistant.
+
 Your task is to extract regex-based edits from Excel editing instructions.
 
 For each edit, return a JSON object with:
-- target: where to apply the change (e.g., "cell B2", "column Email", "row 0", "all")
+- target: where to apply the change.
+  It can be:
+  - "all"                         → for entire sheet
+  - "row 2"                       → for a specific row
+  - "column Email"               → for a specific column
+  - "cell B2"                    → for a specific cell
+  - "row 1 columns 0 to 2"       → for partial row (by column indices)
+  - "column Name rows 0 to 4"    → for partial column (by row indices)
+  - "range A1:C3"                → for a block region
 - regex: the pattern to match (no quotes)
-- replacement: the replacement string (can be empty)
+- replacement: the string to replace matches with (can be empty)
 
-If a field like "Email" is mentioned with specific rows (e.g. "first 3 rows of Email"), convert to:
-"cell Email row 0", "cell Email row 1", etc.
+Interpret phrases like:
+- "first 3 columns of row 2" → as `"row 2 columns 0 to 2"`
+- "first 2 rows of column Email" → as `"column Email rows 0 to 1"`
 
-Return only a raw JSON array. Do not use markdown syntax like ```json.
-Description: {description}  
+Return only a raw JSON array. Do not include markdown like ```json.
+Description: {description}
 JSON:
 """
 
