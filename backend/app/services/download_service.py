@@ -21,6 +21,10 @@ def get_file_from_session(session) -> tuple[bytes, str, str]:
 
         if "working_df" in session:
             df = pd.read_json(session["working_df"])
+            if "Joined Date" in df.columns:
+                df["Joined Date"] = pd.to_datetime(
+                    df["Joined Date"], errors="coerce"
+                ).dt.strftime("%Y-%m-%d")
         else:
             df = pd.read_json(session["uploaded_data"])
 
