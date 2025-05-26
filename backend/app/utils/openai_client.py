@@ -52,26 +52,33 @@ def get_regex_tasks_from_nl(description: str) -> List[Dict[str, str]]:
     prompt = f"""
 You are a smart assistant.
 
-Your task is to extract regex-based edits from Excel editing instructions.
+Your task is to extract regex-based edit instructions from the following Excel-related description.
+
+Assume the data is from Australia. For example:
+- Phone numbers may start with "+61" or "04"
+- Dates follow the "DD/MM/YYYY" format
+- Postal codes are 4-digit numbers (e.g., 2000, 3004)
+- Business numbers (ABNs) are 11-digit numbers like "12 345 678 901"
 
 For each edit, return a JSON object with:
-- target: where to apply the change.
-  It can be:
-  - "all"                         → for entire sheet
-  - "row 2"                       → for a specific row
-  - "column Email"               → for a specific column
-  - "cell B2"                    → for a specific cell
-  - "row 1 columns 0 to 2"       → for partial row (by column indices)
-  - "column Name rows 0 to 4"    → for partial column (by row indices)
-  - "range A1:C3"                → for a block region
-- regex: the pattern to match (no quotes)
-- replacement: the string to replace matches with (can be empty)
+- target: where to apply the change. It must be one of:
+  - "all"                           → entire sheet
+  - "row <number>"                 → specific row (e.g., "row 2")
+  - "column <name>"               → specific column by name (e.g., "column Email")
+  - "cell <Excel-style>"          → specific cell (e.g., "cell B2")
+  - "row <number> columns <start> to <end>" → partial row (0-based column indices)
+  - "column <name> rows <start> to <end>"   → partial column (0-based row indices)
+  - "range <A1>:<C3>"             → Excel-style rectangular region
 
-Interpret phrases like:
-- "first 3 columns of row 2" → as `"row 2 columns 0 to 2"`
-- "first 2 rows of column Email" → as `"column Email rows 0 to 1"`
+Interpret common phrases like:
+- "first 3 columns of row 2" → "row 2 columns 0 to 2"
+- "first 2 rows of column Email" → "column Email rows 0 to 1"
+- "first 4 rows" → ["row 0", "row 1", "row 2", "row 3"]
 
-Return only a raw JSON array. Do not include markdown like ```json.
+Regex patterns must be written as raw patterns (no quotes or explanation).
+Replacements should be strings (may be empty).
+
+Return only a raw JSON array. Do NOT include Markdown formatting or comments.
 Description: {description}
 JSON:
 """
