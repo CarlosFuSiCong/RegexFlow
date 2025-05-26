@@ -1,9 +1,10 @@
 # app/views/generate.py
 
 import logging
+import pandas as pd
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from app.services.generate_service import generate_regex_tasks_from_description
+from app.services.generate_service import generate_and_expand_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -12,12 +13,18 @@ logger = logging.getLogger(__name__)
 def generate_regex_tasks(request):
     try:
         description = request.data.get("description")
-
         if not description:
             logger.warning("Missing description in request.")
             return Response({"error": "Missing description."}, status=400)
 
-        tasks = generate_regex_tasks_from_description(description)
+        if "working_df" not in request.session:
+            logger.warning("No uploaded data found in session.")
+            return Response({"error": "No uploaded data found."}, status=400)
+
+        df_json = request.session["working_df"]
+        df = pd.read_json(df_json)
+
+        tasks = generate_and_expand_tasks(description, df)
 
         logger.info(f"Regex tasks generated for description: {description}")
         return Response({"tasks": tasks})
