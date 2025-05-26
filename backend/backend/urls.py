@@ -21,6 +21,7 @@ from app.views.upload import upload_file
 from app.views.generate import generate_regex_tasks
 from app.views.replace import replace_tasks
 from app.views.download import download_file
+from app.views.csrf import get_csrf_token
 
 
 urlpatterns = [
@@ -29,4 +30,5 @@ urlpatterns = [
     path("api/generate-tasks/", generate_regex_tasks),
     path("api/replace/", replace_tasks),
     path("api/download/", download_file),
+    path("api/get-csrf/", get_csrf_token),
 ]
