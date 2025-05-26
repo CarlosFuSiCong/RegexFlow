@@ -62,13 +62,16 @@ Assume the data is from Australia. For example:
 
 For each edit, return a JSON object with:
 - target: where to apply the change. It must be one of:
-  - "all"                           → entire sheet
-  - "row <number>"                 → specific row (e.g., "row 2")
-  - "column <name>"               → specific column by name (e.g., "column Email")
-  - "cell <Excel-style>"          → specific cell (e.g., "cell B2")
-  - "row <number> columns <start> to <end>" → partial row (0-based column indices)
-  - "column <name> rows <start> to <end>"   → partial column (0-based row indices)
-  - "range <A1>:<C3>"             → Excel-style rectangular region
+    - "all"
+    - "row <number>"
+    - "column <name>"
+    - "cell <Excel-style>"
+    - "row <number> columns <start> to <end>"
+    - "column <name> rows <start> to <end>"
+    - "range <A1>:<C3>"
+    - "row even" → a list of even-numbered rows such as ["row 0", "row 2", "row 4"]
+    - "column odd" → ["column 1", "column 3", "column 5"]
+    - "cell range A1, B2, C3" → ["cell A1", "cell B2", "cell C3"]
 
 Interpret common phrases like:
 - "first 3 columns of row 2" → "row 2 columns 0 to 2"
@@ -78,9 +81,12 @@ Interpret common phrases like:
 Regex patterns must be written as raw patterns (no quotes or explanation).
 Replacements should be strings (may be empty).
 
-Return only a raw JSON array. Do NOT include Markdown formatting or comments.
+Return only a raw JSON array. Do NOT include Markdown formatting or comments.  
+Please return a JSON array with double-escaped regex strings (i.e., use \\\\ instead of \\).
+
 Description: {description}
 JSON:
+
 """
 
     try:
