@@ -131,3 +131,30 @@ def replace_in_cell(
         raise ValueError(
             f"Regex replacement failed (cell={col_name}{row_index + 1}): {e}"
         )
+
+
+def preview_tasks(df: pd.DataFrame, tasks: List[Dict[str, str]]) -> List[Dict]:
+    from copy import deepcopy
+
+    original_df = deepcopy(df)
+    preview_df = deepcopy(df)
+
+    apply_tasks(preview_df, tasks)
+
+    diffs = []
+    for i in range(len(original_df)):
+        for col in original_df.columns:
+            before = original_df.at[i, col]
+            after = preview_df.at[i, col]
+            if pd.notnull(before) and pd.notnull(after) and str(before) != str(after):
+                diffs.append(
+                    {
+                        "row": i + 1,
+                        "column": col,
+                        "original": str(before),
+                        "modified": str(after),
+                    }
+                )
+
+    logger.info(f"Preview generated with {len(diffs)} changes.")
+    return diffs
