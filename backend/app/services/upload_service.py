@@ -7,13 +7,15 @@ logger = logging.getLogger(__name__)  # Get module-level logger
 
 
 def handle_upload(file):
+    """
+    Parses the uploaded file and returns the full DataFrame and column names.
+    """
     try:
         logger.debug(f"Received file for upload: {file.name}")
         df = parse_file(file)
-        preview = df.head(10).to_dict("records")
         columns = list(df.columns)
         logger.info(f"File parsed successfully: {file.name}, columns: {columns}")
-        return df, preview, columns
+        return df, columns
     except Exception as e:
         logger.error(f"Failed to process uploaded file: {file.name}")
         logger.exception(e)  # logs full traceback

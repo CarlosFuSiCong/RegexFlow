@@ -7,6 +7,12 @@ logger = logging.getLogger(__name__)
 
 
 def parse_file(file):
+    """
+    Parses an uploaded file (.csv or .xlsx) and returns a Pandas DataFrame.
+
+    Raises:
+        ValueError: If the file format is unsupported or parsing fails.
+    """
     try:
         logger.debug(f"Attempting to parse file: {file.name}")
 

@@ -13,28 +13,36 @@ logger = logging.getLogger(__name__)
 @api_view(["POST"])
 def upload_file(request):
     try:
+        # Get uploaded file
         file = request.FILES["file"]
         logger.debug(f"Received upload request: {file.name}")
 
-        df, preview, columns = handle_upload(file)
+        # Read the file into DataFrame, extract preview and column names
+        df, columns = handle_upload(file)
 
-        # Save uploaded file format: csv or xlsx
+        # Save file format
         if file.name.endswith(".xlsx"):
             request.session["uploaded_format"] = "xlsx"
         else:
             request.session["uploaded_format"] = "csv"
 
-        # Save original file
+        # Save original filename
         request.session["uploaded_filename"] = file.name
 
-        # Replace NaN with None for serialization
+        # Save uploaded data (for original download)
         safe_data = df.replace({np.nan: None}).to_dict(orient="records")
         request.session["uploaded_data"] = json.dumps(safe_data, default=str)
 
-        # Add this line to make /replace/ work
+        # Save working DataFrame (used by replace and preview)
         request.session["working_df"] = df.to_json()
 
-        preview = df.head(10).replace({np.nan: None}).to_dict("records")
+        # Generate first-page preview (default page=1, page_size=50)
+        page = 1
+        page_size = 50
+        start = (page - 1) * page_size
+        end = start + page_size
+        preview = df.iloc[start:end].replace({np.nan: None}).to_dict("records")
+        total_rows = len(df)
 
         logger.info(f"Upload successful: {file.name}, columns: {columns}")
 
@@ -42,6 +50,10 @@ def upload_file(request):
             {
                 "columns": columns,
                 "preview": preview,
+                "page": page,
+                "page_size": page_size,
+                "total_rows": total_rows,
+                "total_pages": (total_rows + page_size - 1) // page_size,
                 "message": "File uploaded successfully.",
             }
         )
