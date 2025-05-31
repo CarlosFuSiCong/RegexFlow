@@ -16,11 +16,12 @@ export const handleApiError = (error: unknown): never => {
   if (error instanceof AxiosError) {
     const status = error.response?.status;
     const code = error.code;
-
+    const errorData = error.response?.data || {};
     const message =
-      error.response?.data?.message ||
-      error.response?.data?.detail ||
-      error.response?.data?.errors?.[0]?.message ||
+      (typeof errorData.error === 'string' && errorData.error) ||
+      errorData.message ||
+      errorData.detail ||
+      (Array.isArray(errorData.errors) && errorData.errors[0]?.message) ||
       error.message;
 
     switch (status) {

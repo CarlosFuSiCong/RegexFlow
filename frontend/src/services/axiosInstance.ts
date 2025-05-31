@@ -10,30 +10,30 @@ const api = axios.create({
 
 let csrfFetched = false;
 
-api.interceptors.request.use(async (config) => {
-  try {
-    if (!csrfFetched && !document.cookie.includes('csrftoken')) {
-      await axios.get('/api/get-csrf');
-      csrfFetched = true;
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      // Only fetch CSRF cookie once, if not already present
+      if (!csrfFetched && !document.cookie.includes('csrftoken')) {
+        await axios.get('/api/csrf-token/');
+        csrfFetched = true;
+      }
+
+      // Read the token from the cookie
+      const csrfToken = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+
+      if (csrfToken && config.headers) {
+        config.headers['X-CSRFToken'] = csrfToken;
+      }
+
+      return config;
+    } catch (error) {
+      return Promise.reject(error);
     }
-
-    const csrfToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('csrftoken='))
-      ?.split('=')[1];
-
-    if (csrfToken) {
-      config.headers['X-CSRFToken'] = csrfToken;
-    }
-
-    return config;
-  } catch (error) {
-    return Promise.reject(error);
-  }
-});
-
-api.interceptors.response.use(
-  (response) => response,
+  },
   (error) => Promise.reject(error)
 );
 
