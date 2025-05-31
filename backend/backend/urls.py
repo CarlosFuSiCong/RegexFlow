@@ -16,12 +16,12 @@ from app.views.preview_data import preview_data
 from app.views.preview_replace import preview_replace_tasks
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/upload/", upload_file),
-    path("api/preview_data/", preview_data),
-    path("api/generate-tasks/", generate_regex_tasks),
-    path("api/preview_replace/", preview_replace_tasks),
-    path("api/replace/", replace_tasks),
-    path("api/download/", download_file),
-    path("api/get-csrf/", get_csrf_token),
+    path("admin", admin.site.urls),
+    path("api/upload", upload_file),
+    path("api/preview_data", preview_data),
+    path("api/generate-tasks", generate_regex_tasks),
+    path("api/preview_replace", preview_replace_tasks),
+    path("api/replace", replace_tasks),
+    path("api/download", download_file),
+    path("api/get-csrf", get_csrf_token),
 ]

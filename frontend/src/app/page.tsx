@@ -6,11 +6,16 @@ import Navbar from "@/components/Navbar";
 import DatasetTable from "@/components/DatasetTable";
 
 export default function DatasetPage() {
-  const [data, setData] = useState<any[][]>([]);
+  const [data, setData] = useState<(string | number | null)[][]>([]);
+
+  const handleUpload = async (rawData: (string | number | null)[][]) => {
+    // Only display the original data
+    setData(rawData);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar onUpload={setData} />
+      <Navbar onUpload={handleUpload} />
 
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
         {/* Left: Excel Table */}

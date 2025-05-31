@@ -13,7 +13,7 @@ let csrfFetched = false;
 api.interceptors.request.use(async (config) => {
   try {
     if (!csrfFetched && !document.cookie.includes('csrftoken')) {
-      await axios.get('/api/get-csrf/');
+      await axios.get('/api/get-csrf');
       csrfFetched = true;
     }
 

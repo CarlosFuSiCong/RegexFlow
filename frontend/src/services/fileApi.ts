@@ -6,7 +6,7 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post<UploadResponse>('/upload/', formData, {
+    const response = await api.post<UploadResponse>('upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -19,7 +19,7 @@ export const uploadFile = async (file: File): Promise<UploadResponse> => {
 
 export const downloadFile = async (filename?: string): Promise<Blob> => {
   try {
-    const response = await api.get<Blob>('/download/', {
+    const response = await api.get<Blob>('download', {
       params: { filename },
       responseType: 'blob',
     });
