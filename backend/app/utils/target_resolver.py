@@ -31,7 +31,7 @@ def resolve_target(df: pd.DataFrame, target: str) -> List[Tuple[int, int]]:
             raise ValueError(f"Row index '{row}' is out of bounds.")
         return [(row, c) for c in range(len(df.columns))]
 
-    # 2. Match "column NAME"
+    # 2a. Match "column NAME"
     if m := re.fullmatch(r"column\s+(.+)", target_clean):
         col_key = m.group(1).strip()  # Already lowercase
         if col_key not in lower_to_actual:
@@ -70,13 +70,20 @@ def resolve_target(df: pd.DataFrame, target: str) -> List[Tuple[int, int]]:
         col_index = df.columns.get_loc(actual_col)
         return [(r, col_index) for r in range(r1, r2 + 1)]
 
-    # 5. Match "row R1 columns C1 to C2"
+    # 5a. Match "row R1 columns C1 to C2"
     if m := re.fullmatch(r"row\s+(\d+)\s+columns\s+(\d+)\s+to\s+(\d+)", target_clean):
         row = int(m.group(1))
         c1, c2 = int(m.group(2)), int(m.group(3))
         if row < 0 or row >= len(df) or c1 < 0 or c2 >= len(df.columns) or c1 > c2:
             raise ValueError(f"Invalid row/column range in target '{target}'.")
         return [(row, c) for c in range(c1, c2 + 1)]
+
+    # 5b. Match "row R column C"
+    if m := re.fullmatch(r"row\s+(\d+)\s+column\s+(\d+)", target_clean):
+        row, col = int(m.group(1)), int(m.group(2))
+        if row < 0 or row >= len(df) or col < 0 or col >= len(df.columns):
+            raise ValueError(f"Invalid row/column index in target '{target}'.")
+        return [(row, col)]
 
     # 6. Match "range A1:C3" (supports "a1:c3", "A1:C3", etc.)
     if m := re.fullmatch(r"range\s+([a-z]+)(\d+):([a-z]+)(\d+)", target_clean):
