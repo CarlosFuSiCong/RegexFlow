@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { uploadFile } from "@/services/fileApi";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { UploadCloud, Loader2 } from "lucide-react";
 
 interface UploadModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface UploadModalProps {
 export default function UploadModal({ open, onOpenChange, onUpload }: UploadModalProps) {
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,30 +51,50 @@ export default function UploadModal({ open, onOpenChange, onUpload }: UploadModa
     }
   };
 
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload Excel or CSV File</DialogTitle>
+          <DialogTitle className="text-lg">Upload Excel or CSV File</DialogTitle>
           <DialogDescription>
             Select a file to upload. Only Excel or CSV formats are supported.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Input
+          <input
+            ref={fileInputRef}
             type="file"
             accept=".xlsx,.xls,.csv"
             onChange={handleFileChange}
-            disabled={uploading}
+            hidden
           />
+
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+            onClick={triggerFileInput}
+            disabled={uploading}
+          >
+            <UploadCloud className="w-4 h-4" />
+            {uploading ? "Uploading..." : "Select File"}
+          </Button>
+
           {fileName && (
             <p className="text-sm text-muted-foreground">
-              Uploaded: <span className="font-medium">{fileName}</span>
+              Selected file: <span className="font-medium">{fileName}</span>
             </p>
           )}
+
           {uploading && (
-            <p className="text-sm text-blue-500 animate-pulse">Uploading...</p>
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <Loader2 className="animate-spin h-4 w-4" />
+              Uploading file, please wait...
+            </div>
           )}
         </div>
       </DialogContent>

@@ -15,7 +15,7 @@ export const previewData = async (
   pageSize: number = 50
 ): Promise<PreviewDataResponse> => {
   try {
-    const response = await api.get<PreviewDataResponse>('/preview-data', {
+    const response = await api.get<PreviewDataResponse>('/preview_data', {
       params: { page, page_size: pageSize },
     });
     return response.data;
@@ -28,7 +28,7 @@ export const generateRegexTasks = async (
   data: GenerateTasksRequest
 ): Promise<GenerateTasksResponse> => {
   try {
-    const response = await api.post<GenerateTasksResponse>('/generate-tasks', data);
+    const response = await api.post<GenerateTasksResponse>('/generate_tasks', data);
     return response.data;
   } catch (error) {
     throw handleApiError(error);
@@ -39,7 +39,7 @@ export const previewReplace = async (
   data: PreviewReplaceRequest
 ): Promise<PreviewReplaceResponse> => {
   try {
-    const response = await api.post<PreviewReplaceResponse>('/preview-replace', data);
+    const response = await api.post<PreviewReplaceResponse>('/preview_replace', data);
     return response.data;
   } catch (error) {
     throw handleApiError(error);
