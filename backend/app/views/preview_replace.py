@@ -27,7 +27,7 @@ def preview_replace_tasks(request):
             {
                 "message": "Preview completed.",
                 "total_matches": len(diffs),
-                "preview": diffs[:20],
+                "preview": diffs,
             }
         )
 

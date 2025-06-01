@@ -83,13 +83,27 @@ def replace_in_column(
 ) -> List[Dict]:
     """
     Replace regex matches in a specific column.
+    Supports both column name and numeric index (as string or int).
     """
     try:
+        # Normalize input
+        if isinstance(col_name, int) or (
+            isinstance(col_name, str) and col_name.strip().isdigit()
+        ):
+            col_index = int(col_name)
+            if col_index < 0 or col_index >= len(df.columns):
+                raise ValueError(f"Column index {col_index} is out of range.")
+            col_name = df.columns[col_index]
+        else:
+            col_name = col_name.strip()
+
         logger.info(f"Applying regex to column '{col_name}': pattern='{pattern}'")
+
         result = replace_column_matches(
             df, col_name, pattern, replacement, inplace=True
         )
         return result["replacements"]
+
     except Exception as e:
         logger.exception(f"Failed to apply replacement to column '{col_name}'.")
         raise ValueError(f"Regex replacement failed (column={col_name}): {e}")
