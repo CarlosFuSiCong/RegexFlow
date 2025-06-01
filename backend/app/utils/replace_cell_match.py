@@ -1,9 +1,14 @@
 # app/utils/replace_cell_match.py
 
-import pandas as pd
 import re
+import pandas as pd
 import logging
-from typing import List, Dict, Union
+from typing import Dict
+
+# Import the helper that converts Excel-style letters to zero-based index
+from app.utils.target_resolver import column_letter_to_index
+from app.utils.regex_utils import convert_dollar_groups_to_python
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,50 +19,52 @@ def replace_cell_match(
     pattern: str,
     replacement: str,
     inplace: bool = False,
-) -> Dict[str, Union[pd.DataFrame, List[Dict]]]:
-
-    try:
-        regex = re.compile(pattern)
-    except re.error as e:
-        logger.error(f"Invalid regex pattern: {e}")
-        raise ValueError(f"Invalid regex pattern: {e}")
-
-    col_part = "".join(filter(str.isalpha, cell_label)).upper()
-    row_part = "".join(filter(str.isdigit, cell_label))
-
-    if not col_part or not row_part:
-        raise ValueError(f"Invalid cell label format: '{cell_label}'")
-
-    row_idx = int(row_part) - 1  # Excel-style, so subtract 1
-    col_idx = ord(col_part) - ord("A")
-
-    if row_idx >= len(df) or col_idx >= len(df.columns):
-        raise ValueError(f"Cell '{cell_label}' is out of bounds.")
-
-    column_name = df.columns[col_idx]
-
+) -> Dict:
+    """
+    Replace regex match in a single cell specified by Excel-style label (e.g., "B2").
+    Returns:
+      {
+        "updated_df": df,
+        "replacements": [ { "row": r, "column": c_name, "original": o, "modified": m } ]
+      }
+    """
     if not inplace:
         df = df.copy()
 
-    original = str(df.iat[row_idx, col_idx])
-    try:
-        new_val = regex.sub(replacement, original)
-        if new_val != original:
-            df.iat[row_idx, col_idx] = new_val
-            return {
-                "updated_df": df,
-                "replacements": [
-                    {
-                        "row": row_idx,
-                        "column": column_name,
-                        "from": original,
-                        "to": new_val,
-                    }
-                ],
-            }
-        else:
-            logger.info(f"No match found in cell {cell_label}.")
-            raise ValueError(f"No match found in cell {cell_label}.")
-    except Exception as e:
-        logger.exception("Error occurred during cell regex replacement.")
-        raise RuntimeError("Error occurred during replacement process.") from e
+    # Parse cell_label into (letter part, digit part)
+    if m := re.fullmatch(r"([A-Za-z]+)(\d+)", cell_label):
+        col_letters = m.group(1).upper()
+        row_number = int(m.group(2)) - 1
+        # Convert column letters to zero-based index
+        col_index = column_letter_to_index(col_letters)
+    else:
+        raise ValueError(f"Invalid cell label: '{cell_label}'")
+
+    if row_number < 0 or row_number >= len(df):
+        raise ValueError(f"Row index {row_number} out of range.")
+    if col_index < 0 or col_index >= len(df.columns):
+        raise ValueError(f"Column index {col_index} out of range.")
+
+    column_name = df.columns[col_index]
+    original = df.at[row_number, column_name]
+    if pd.isnull(original):
+        return {"updated_df": df, "replacements": []}
+
+    orig_str = str(original)
+    replacement_python = convert_dollar_groups_to_python(replacement)
+    new_str = re.sub(pattern, replacement_python, orig_str)
+    if new_str != orig_str:
+        df.at[row_number, column_name] = new_str
+        return {
+            "updated_df": df,
+            "replacements": [
+                {
+                    "row": row_number,
+                    "column": column_name,
+                    "original": orig_str,
+                    "modified": new_str,
+                }
+            ],
+        }
+
+    return {"updated_df": df, "replacements": []}

@@ -1,121 +1,102 @@
+# app/utils/target_resolver.py
+
 import re
 import pandas as pd
-from typing import List, Tuple
 import logging
+
+from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
 
+def column_letter_to_index(col_letter: str) -> int:
+    """
+    Convert an Excel-style column letter (e.g., "A", "Z", "AA") to a zero-based index.
+    """
+    col_letter = col_letter.upper()
+    index = 0
+    for char in col_letter:
+        if not ("A" <= char <= "Z"):
+            raise ValueError(f"Invalid column letter: '{col_letter}'")
+        index = index * 26 + (ord(char) - ord("A") + 1)
+    return index - 1
+
+
 def resolve_target(df: pd.DataFrame, target: str) -> List[Tuple[int, int]]:
     """
-    Convert semantic target into list of (row, col) coordinates.
-    Supports:
-    - "row 3"
-    - "column Email"
-    - "cell 1,2"
-    - "column Email rows 1 to 2"
-    - "row 1 columns 0 to 2"
-    - "range A1:C3"
-
-    Now also matches column names in a case‐insensitive manner.
+    Given a DataFrame and a target string (already trimmed, not lowercased),
+    return a list of (row_index, col_index) tuples that match that target.
+    Raises ValueError if the format is unrecognized or indices are out of range.
+    Supported formats:
+      - "cell <Letters><Digits>"        (e.g. "B2", "AA10")
+      - "range <Letters><Digits>:<Letters><Digits>"  (e.g. "A1:C3")
+      - "row <N> columns <C1> to <C2>"  (e.g. "row 2 columns 1 to 4")
+      - "column <C> rows <R1> to <R2>"  (e.g. "column B rows 0 to 3")
     """
-    # Build a mapping of lowercase column names to the actual column names for case-insensitive lookup
-    lower_to_actual = {c.lower(): c for c in df.columns}
+    raw = target.strip()
 
-    target_clean = target.strip().lower()
+    # CASE A: single cell like "B2"
+    if m := re.fullmatch(r"(?i)cell\s+([A-Za-z]+)(\d+)", raw):
+        col_letters = m.group(1).upper()
+        row_str = m.group(2)
+        row_index = int(row_str) - 1
+        col_index = column_letter_to_index(col_letters)
+        _validate_cell(df, row_index, col_index)
+        return [(row_index, col_index)]
 
-    # 1. Match "row N"
-    if m := re.fullmatch(r"row\s+(\d+)", target_clean):
-        row = int(m.group(1))
-        if row < 0 or row >= len(df):
-            raise ValueError(f"Row index '{row}' is out of bounds.")
-        return [(row, c) for c in range(len(df.columns))]
+    # CASE B: range like "range A1:C3"
+    if m := re.fullmatch(r"(?i)range\s+([A-Za-z]+)(\d+):([A-Za-z]+)(\d+)", raw):
+        start_col = m.group(1).upper()
+        start_row = int(m.group(2)) - 1
+        end_col = m.group(3).upper()
+        end_row = int(m.group(4)) - 1
+        c1 = column_letter_to_index(start_col)
+        c2 = column_letter_to_index(end_col)
+        coords = []
+        for r in range(min(start_row, end_row), max(start_row, end_row) + 1):
+            for c in range(min(c1, c2), max(c1, c2) + 1):
+                _validate_cell(df, r, c)
+                coords.append((r, c))
+        return coords
 
-    # 2a. Match "column NAME"
-    if m := re.fullmatch(r"column\s+(.+)", target_clean):
-        col_key = m.group(1).strip()  # Already lowercase
-        if col_key not in lower_to_actual:
-            raise ValueError(
-                f"Column '{m.group(1).strip()}' not found (case‐insensitive lookup failed)."
-            )
-        actual_col = lower_to_actual[col_key]
-        col_index = df.columns.get_loc(actual_col)
-        return [(r, col_index) for r in range(len(df))]
+    # CASE C: "row N columns C1 to C2"
+    if m := re.fullmatch(r"(?i)row\s+(\d+)\s+columns\s+(\d+)\s+to\s+(\d+)", raw):
+        row_index = int(m.group(1)) - 1
+        c1 = int(m.group(2))
+        c2 = int(m.group(3))
+        coords = []
+        for c in range(min(c1, c2), max(c1, c2) + 1):
+            _validate_cell(df, row_index, c)
+            coords.append((row_index, c))
+        return coords
 
-    # 2b. Match "column N" where N is a digit (index-based access)
-    if m := re.fullmatch(r"column\s+(\d+)", target_clean):
-        col_index = int(m.group(1))
-        if col_index < 0 or col_index >= len(df.columns):
-            raise ValueError(f"Column index '{col_index}' is out of bounds.")
-        return [(r, col_index) for r in range(len(df))]
+    # CASE D: "column C rows R1 to R2"
+    if m := re.fullmatch(
+        r"(?i)column\s+([A-Za-z]+|\d+)\s+rows\s+(\d+)\s+to\s+(\d+)", raw
+    ):
+        col_ref = m.group(1)
+        r1 = int(m.group(2))
+        r2 = int(m.group(3))
+        # Determine if col_ref is letter or digit
+        if col_ref.isdigit():
+            col_index = int(col_ref)
+        else:
+            col_index = column_letter_to_index(col_ref.upper())
+        coords = []
+        for r in range(min(r1, r2), max(r1, r2) + 1):
+            _validate_cell(df, r, col_index)
+            coords.append((r, col_index))
+        return coords
 
-    # 3. Match "cell R,C"
-    if m := re.fullmatch(r"cell\s+(\d+)\s*,\s*(\d+)", target_clean):
-        r, c = int(m.group(1)), int(m.group(2))
-        if r < 0 or r >= len(df) or c < 0 or c >= len(df.columns):
-            raise ValueError(f"Cell coordinates ({r},{c}) out of bounds.")
-        return [(r, c)]
-
-    # 4. Match "column NAME rows R1 to R2"
-    if m := re.fullmatch(r"column\s+(.+)\s+rows\s+(\d+)\s+to\s+(\d+)", target_clean):
-        col_key = m.group(1).strip()
-        r1, r2 = int(m.group(2)), int(m.group(3))
-        if col_key not in lower_to_actual:
-            raise ValueError(
-                f"Column '{m.group(1).strip()}' not found (case‐insensitive lookup failed)."
-            )
-        if r1 < 0 or r2 >= len(df) or r1 > r2:
-            raise ValueError(f"Invalid row range {r1} to {r2}.")
-        actual_col = lower_to_actual[col_key]
-        col_index = df.columns.get_loc(actual_col)
-        return [(r, col_index) for r in range(r1, r2 + 1)]
-
-    # 5a. Match "row R1 columns C1 to C2"
-    if m := re.fullmatch(r"row\s+(\d+)\s+columns\s+(\d+)\s+to\s+(\d+)", target_clean):
-        row = int(m.group(1))
-        c1, c2 = int(m.group(2)), int(m.group(3))
-        if row < 0 or row >= len(df) or c1 < 0 or c2 >= len(df.columns) or c1 > c2:
-            raise ValueError(f"Invalid row/column range in target '{target}'.")
-        return [(row, c) for c in range(c1, c2 + 1)]
-
-    # 5b. Match "row R column C"
-    if m := re.fullmatch(r"row\s+(\d+)\s+column\s+(\d+)", target_clean):
-        row, col = int(m.group(1)), int(m.group(2))
-        if row < 0 or row >= len(df) or col < 0 or col >= len(df.columns):
-            raise ValueError(f"Invalid row/column index in target '{target}'.")
-        return [(row, col)]
-
-    # 6. Match "range A1:C3" (supports "a1:c3", "A1:C3", etc.)
-    if m := re.fullmatch(r"range\s+([a-z]+)(\d+):([a-z]+)(\d+)", target_clean):
-        c1, r1, c2, r2 = m.groups()
-        # Excel row numbers start from 1, convert to 0-based index for DataFrame
-        r1_idx, r2_idx = int(r1) - 1, int(r2) - 1
-        col_start = column_letter_to_index(c1.upper())
-        col_end = column_letter_to_index(c2.upper())
-        if (
-            r1_idx < 0
-            or r2_idx >= len(df)
-            or r1_idx > r2_idx
-            or col_start < 0
-            or col_end >= len(df.columns)
-            or col_start > col_end
-        ):
-            raise ValueError(f"Invalid Excel range '{m.group(0)}'.")
-        return [
-            (r, c)
-            for r in range(r1_idx, r2_idx + 1)
-            for c in range(col_start, col_end + 1)
-        ]
-
+    # Unrecognized format
     raise ValueError(f"Unrecognized target format: '{target}'")
 
 
-def column_letter_to_index(col: str) -> int:
+def _validate_cell(df: pd.DataFrame, row: int, col: int):
     """
-    Convert Excel-style column letters (e.g., "A", "B", ..., "Z", "AA", "AB", ...)
-    into a 0-based column index.
+    Ensure that (row, col) indexes are within DataFrame bounds.
     """
-    index = 0
-    for char in col:
-        index = index * 26 + (ord(char.upper()) - ord("A") + 1)
-    return index - 1
+    if row < 0 or row >= len(df):
+        raise ValueError(f"Row index {row} out of range (0 to {len(df)-1})")
+    if col < 0 or col >= len(df.columns):
+        raise ValueError(f"Column index {col} out of range (0 to {len(df.columns)-1})")
