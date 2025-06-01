@@ -6,6 +6,7 @@ from app.services.replace_service import apply_tasks
 import logging
 import pandas as pd
 import copy
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def replace_tasks(request):
             raise ValueError("No DataFrame found in session.")
 
         # Load the original DataFrame from session
-        df = pd.read_json(df_json)
+        df = pd.read_json(StringIO(df_json))
 
         # Make a deep copy to avoid modifying the original DataFrame directly
         original_df = copy.deepcopy(df)

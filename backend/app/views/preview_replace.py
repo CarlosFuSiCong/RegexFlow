@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import logging
 import pandas as pd
+from io import StringIO
 from app.services.replace_service import preview_tasks
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ def preview_replace_tasks(request):
         if df_json is None:
             raise ValueError("No DataFrame found in session.")
 
-        df = pd.read_json(df_json)
+        df = pd.read_json(StringIO(df_json))
         diffs = preview_tasks(df, tasks)
 
         return Response(

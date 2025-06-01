@@ -3,6 +3,7 @@
 import logging
 import pandas as pd
 import numpy as np
+from io import StringIO
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -17,7 +18,7 @@ def preview_data(request):
         if df_json is None:
             return Response({"error": "No working DataFrame found."}, status=400)
 
-        df = pd.read_json(df_json)
+        df = pd.read_json(StringIO(df_json))
 
         # Get pagination parameters from query string
         page = int(request.GET.get("page", 1))

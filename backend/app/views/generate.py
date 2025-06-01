@@ -2,6 +2,7 @@
 
 import logging
 import pandas as pd
+from io import StringIO
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from app.services.generate_service import generate_and_expand_tasks
@@ -22,7 +23,7 @@ def generate_regex_tasks(request):
             return Response({"error": "No uploaded data found."}, status=400)
 
         df_json = request.session["working_df"]
-        df = pd.read_json(df_json)
+        df = pd.read_json(StringIO(df_json))
 
         tasks = generate_and_expand_tasks(description, df)
 
