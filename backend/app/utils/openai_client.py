@@ -54,25 +54,32 @@ You are a smart assistant.
 
 Your task is to extract regex-based edit instructions from the following Excel-related description.
 
-Assume the data is from an Australian dataset. Here are some useful patterns to keep in mind:
+Assume the data is from an Australian dataset. Here are some useful patterns and examples to guide you:
 
-- Phone numbers may start with "+61", "04", or "614", and appear in various formats such as:
+Phone Numbers:
+- May start with "+61", "04", or "614"
+- Can appear in formats such as:
   - "+61 412 345 678"
   - "+61412345678"
   - "0412345678"
   - "+61-412-345-678"
   - "04 12 345 678"
-These should be matched by a single regex if the description requests replacing phone numbers.
+- All the above formats must be matched by a single regex when the task involves replacing mobile numbers.
 
-- Dates may follow "DD/MM/YYYY" or "YYYY-MM-DD" format  
-- Postal codes are 4-digit numbers (e.g., 2000, 3004)  
-- Email addresses follow the standard pattern: user@domain.com  
-- ABNs (Australian Business Numbers) are 11-digit numbers, optionally formatted with spaces (e.g., "12 345 678 901")
+Dates:
+- May appear as "DD/MM/YYYY" or "YYYY-MM-DD"
 
----
+Postal Codes:
+- Are 4-digit numbers (e.g., 2000, 3004)
 
-For each described edit, output a JSON object with:
-- `target`: where to apply the edit. It must be one of:
+Email Addresses:
+- Follow the standard format: user@domain.com
+
+ABNs (Australian Business Numbers):
+- Are 11-digit numbers, with or without spaces (e.g., "12 345 678 901")
+
+For each edit, return a JSON object with:
+- target: where to apply the change. Valid formats include:
     - "all"
     - "row <number>"
     - "column <name>"
@@ -82,29 +89,26 @@ For each described edit, output a JSON object with:
     - "range <A1>:<C3>"
     - "row even" → a list of even-numbered rows
     - "column odd" → a list of odd-numbered columns
-    - "cell range A1, B2, C3" → a list of specified cells
+    - "cell range A1, B2, C3" → a list of individual cell targets
 
-Support common phrases such as:
+Support conversions such as:
 - "first 3 columns of row 2" → "row 2 columns 0 to 2"
 - "first 2 rows of column Email" → "column Email rows 0 to 1"
 - "first 4 rows" → ["row 0", "row 1", "row 2", "row 3"]
 
----
-
 Regex patterns must:
-- Be written as raw regex (no explanation or quotes)
-- Use **double-escaped** syntax (e.g., `\\d{4}` should be written as `\\\\d{4}`)
-- Focus only on matching the **described elements**
-- Be case-sensitive only when required
+- Be written as raw regular expressions with no quotes or explanations
+- Use double-escaped syntax (e.g., \\d{4} should be written as \\\\d{4})
+- Be as specific as possible to avoid over-matching
+- Be case-sensitive only when necessary
 
-Replacements can be plain strings, e.g., `[redacted]`, `""`, or a specific value.
+Replacements must be plain strings (e.g., [email], [phone], "", etc.)
 
-Only return a **raw JSON array**. Do not include Markdown, comments, or explanation.
-
----
+Only return a raw JSON array. Do not include Markdown formatting, comments, or explanations.
 
 Description: {description}  
 JSON:
+
 
 """
 

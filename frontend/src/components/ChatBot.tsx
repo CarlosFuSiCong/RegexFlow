@@ -49,7 +49,30 @@ export default function ChatBot({ onDataChanged, onPreviewFull }: ChatBotProps) 
   useEffect(scrollToBottom, [messages]);
 
   useEffect(() => {
-    setMessages([{ role: "bot", text: "Hi! How can I help you today?" }]);
+    setMessages([
+      {
+        role: "bot",
+        text:
+          "Hi! I'm here to help you edit your spreadsheet using smart pattern-based replacements.\n\n" +
+          "You can describe what you want to replace, where to replace it, and what to replace it with."
+      },
+      {
+        role: "bot",
+        text:
+          "✅ Please follow this format:\n" +
+          "Replace <what> (e.g. <examples>) with <replacement>\n\n" +
+          "📌 Example:\n" +
+          "Replace all Australian mobile phone numbers (e.g. +61412345678, +61 412 345 678, +61-412-345-678, 0412345678) with [phone]"
+      },
+      {
+        role: "bot",
+        text:
+          "You can also target specific parts of the sheet:\n" +
+          "• Replace email addresses in the Email column with [email]\n" +
+          "• Replace ABNs in the ABN column with [abn]\n" +
+          "• In the Notes column, replace all dates like 01/06/2025 with [date]"
+      }
+    ]);
   }, []);
 
   const appendMessage = (msg: ChatMessage) => {
