@@ -42,6 +42,13 @@ def resolve_target(df: pd.DataFrame, target: str) -> List[Tuple[int, int]]:
         col_index = df.columns.get_loc(actual_col)
         return [(r, col_index) for r in range(len(df))]
 
+    # 2b. Match "column N" where N is a digit (index-based access)
+    if m := re.fullmatch(r"column\s+(\d+)", target_clean):
+        col_index = int(m.group(1))
+        if col_index < 0 or col_index >= len(df.columns):
+            raise ValueError(f"Column index '{col_index}' is out of bounds.")
+        return [(r, col_index) for r in range(len(df))]
+
     # 3. Match "cell R,C"
     if m := re.fullmatch(r"cell\s+(\d+)\s*,\s*(\d+)", target_clean):
         r, c = int(m.group(1)), int(m.group(2))
