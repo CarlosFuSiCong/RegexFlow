@@ -1,5 +1,5 @@
 # RegexFlow
-[![Watch the demo]](https://github.com/CarlosFuSiCong/RegexFlow/raw/main/RegexFlow.mp4)
+[![Watch the demo](https://github.com/CarlosFuSiCong/RegexFlow/raw/main/assets/RegexFlow.jpg)](https://github.com/CarlosFuSiCong/RegexFlow/raw/main/RegexFlow.mp4)
 RegexFlow is a web application that helps users work with regular expressions, providing a modern and intuitive interface for testing, validating, and experimenting with regex patterns.
 
 ## Features
