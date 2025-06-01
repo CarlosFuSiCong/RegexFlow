@@ -1,8 +1,11 @@
 # RegexFlow
+
 <a href="https://github.com/CarlosFuSiCong/RegexFlow/raw/main/RegexFlow.mp4">
   <img src="https://github.com/CarlosFuSiCong/RegexFlow/raw/main/RegexFlow.jpg" alt="Watch the demo" width="400"/>
 </a>
+
 **Click the image to download the demo video (.mp4)**
+
 RegexFlow is a web application that helps users work with regular expressions, providing a modern and intuitive interface for testing, validating, and experimenting with regex patterns.
 
 ## Features
