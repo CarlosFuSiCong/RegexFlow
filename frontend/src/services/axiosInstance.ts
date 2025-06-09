@@ -15,7 +15,7 @@ api.interceptors.request.use(
     try {
       // Only fetch CSRF cookie once, if not already present
       if (!csrfFetched && !document.cookie.includes('csrftoken')) {
-        await axios.get('/api/csrf-token/');
+        await axios.get('/api/get_csrf/');
         csrfFetched = true;
       }
 

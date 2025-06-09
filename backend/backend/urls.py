@@ -23,5 +23,5 @@ urlpatterns = [
     path("api/preview_replace", preview_replace_tasks),
     path("api/replace", replace_tasks),
     path("api/download", download_file),
-    path("api/get-csrf", get_csrf_token),
+    path("api/get_csrf", get_csrf_token),
 ]
